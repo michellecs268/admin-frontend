@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,60 +9,50 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, MoreHorizontal, UserX, Mail } from "lucide-react"
+import API from "@/lib/api"
 
-const users = [
-  {
-    id: "P001",
-    name: "Alex Johnson",
-    email: "alex.johnson@email.com",
-    role: "Player",
-    status: "Suspended",
-    joinDate: "2024-01-15",
-  },
-  {
-    id: "G001",
-    name: "Dr. Sarah Chen",
-    email: "s.chen@university.edu",
-    role: "Geologist",
-    status: "Active",
-    joinDate: "2024-01-10",
-  },
-  {
-    id: "P002",
-    name: "Mike Wilson",
-    email: "mike.w@email.com",
-    role: "Player",
-    status: "Suspended",
-    joinDate: "2024-02-01",
-  },
-  {
-    id: "P003",
-    name: "Emma Davis",
-    email: "emma.davis@email.com",
-    role: "Player",
-    status: "Active",
-    joinDate: "2024-01-20",
-  },
-  {
-    id: "G002",
-    name: "Dr. Tom Brown",
-    email: "t.brown@research.org",
-    role: "Geologist",
-    status: "Active",
-    joinDate: "2024-01-25",
-  },
-]
+type User = {
+  id: string
+  name: string
+  email: string
+  role: string
+  status: string
+  joinDate: string
+}
 
 export function UserManagement() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
 
+  useEffect(() => {
+    API.get("/admin/users")
+      .then((res) => {
+        const raw = res.data as any[] 
+        const mappedUsers = raw.map((u) => ({
+          id: u.id,
+          name: u.username || u.name,
+          email: u.emailAddress,
+          role: u.type,
+          status: u.isActive ? "Active" : "Suspended",
+          joinDate: u.joinDate || u.join_date || "N/A",
+        }))
+        setUsers(mappedUsers)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error("Failed to fetch users:", err)
+        setLoading(false)
+      })
+  }, [])
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.id.toLowerCase().includes(searchTerm.toLowerCase())
+      (user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (user.id?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
     const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter
     const matchesStatus = statusFilter === "all" || user.status.toLowerCase() === statusFilter
     return matchesSearch && matchesRole && matchesStatus
@@ -70,7 +60,10 @@ export function UserManagement() {
 
   const handleSuspendUser = (userId: string) => {
     console.log(`Suspending user ${userId}`)
+    // TODO: Call backend suspend/reactivate endpoint here
   }
+
+  if (loading) return <p className="p-4">Loading users...</p>
 
   return (
     <Card>
