@@ -19,3 +19,4 @@ API.interceptors.request.use((config) => {
 export default API
 
 //localStorage.setItem("token", "blabla") on inspect web, get token from login postman
+
