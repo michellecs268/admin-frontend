@@ -6,9 +6,17 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff } from "lucide-react"
+import API from "@/lib/api" // ✅ Make sure this points to the axios instance
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -23,22 +31,39 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
 
-    // Simulate authentication
-    setTimeout(() => {
-      if (email === "admin@rockquest.com" && password === "admin123") {
+    try {
+      const response = await API.post("/admin-auth/login", {
+        email,
+        password,
+      }) as { data: { token?: string; access_token?: string } }      
+
+      const token = response.data.token || response.data.access_token
+      if (token) {
+        localStorage.setItem("adminToken", token) // Save token
         router.push("/dashboard")
       } else {
-        setError("Invalid email or password")
+        setError("Login failed: token not returned")
       }
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          err?.response?.data?.message ||
+          "Invalid email or password"
+      )
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
     <Card className="w-full bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
       <CardHeader className="space-y-1 text-center">
         <div className="flex justify-center mb-4">
-          <img src="/images/rockland-logo.png" alt="RockQuest Logo" className="h-16 w-16 object-contain" />
+          <img
+            src="/images/rockland-logo.png"
+            alt="RockQuest Logo"
+            className="h-16 w-16 object-contain"
+          />
         </div>
         <CardTitle className="text-2xl font-bold font-press-start">RockQuest</CardTitle>
         <CardDescription>Sign in to your admin account</CardDescription>

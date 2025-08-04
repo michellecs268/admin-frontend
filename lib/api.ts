@@ -6,7 +6,7 @@ const API = axios.create({
 
 API.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("adminToken")
     if (token) {
       // Ensure headers object exists
       config.headers = config.headers || {}

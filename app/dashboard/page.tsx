@@ -1,33 +1,45 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, MessageSquare, AlertTriangle } from "lucide-react"
 import API from "@/lib/api"
 
 export default function Dashboard() {
   const [counts, setCounts] = useState({ users: 0, posts: 0, reports: 0 })
+  const router = useRouter()
 
   useEffect(() => {
+    const token = localStorage.getItem("adminToken") // ensure token exists
+    if (!token) {
+      router.push("/login")
+      return
+    }
+
     async function fetchCounts() {
       try {
         const [userRes, postRes, reportRes] = await Promise.all([
           API.get("/admin/dashboard/users") as Promise<{ data: { totalUsers: number } }>,
           API.get("/admin/dashboard/posts") as Promise<{ data: { totalPosts: number } }>,
           API.get("/admin/dashboard/reports") as Promise<{ data: { totalReports: number } }>,
-        ])        
+        ])
         setCounts({
           users: userRes.data.totalUsers,
           posts: postRes.data.totalPosts,
           reports: reportRes.data.totalReports,
         })
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching dashboard stats:", error)
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          localStorage.removeItem("adminToken") // clear expired or invalid token
+          router.push("/login")
+        }
       }
     }
 
     fetchCounts()
-  }, [])
+  }, [router])
 
   return (
     <div className="space-y-6" style={{ backgroundColor: "#E0DED3", minHeight: "100vh" }}>

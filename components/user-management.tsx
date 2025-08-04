@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation" // ✅ NEW
 import {
   Card,
   CardContent,
@@ -54,10 +55,16 @@ export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
-
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const router = useRouter() // ✅ NEW
 
   useEffect(() => {
+    const token = localStorage.getItem("adminToken")
+    if (!token) {
+      router.push("/login")
+      return
+    }
+
     API.get("/admin/users")
       .then((res) => {
         const raw = res.data as any[]
@@ -74,9 +81,13 @@ export function UserManagement() {
       })
       .catch((err) => {
         console.error("Failed to fetch users:", err)
+        if (err?.response?.status === 401) {
+          localStorage.removeItem("adminToken")
+          router.push("/login")
+        }
         setLoading(false)
       })
-  }, [])
+  }, [router])
 
   const handleConfirmSuspend = async () => {
     if (!selectedUser) return
@@ -117,7 +128,9 @@ export function UserManagement() {
       <Card>
         <CardHeader>
           <CardTitle className="font-press-start">User Management</CardTitle>
-          <CardDescription>Manage player and geologist accounts, view activity, and handle suspensions</CardDescription>
+          <CardDescription>
+            Manage player and geologist accounts, view activity, and handle suspensions
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -153,7 +166,10 @@ export function UserManagement() {
           </div>
           <div className="space-y-4">
             {filteredUsers.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div
+                key={user.id}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
                 <div className="flex items-center space-x-4">
                   <Avatar>
                     <AvatarImage src={`/placeholder.svg?height=40&width=40`} />
@@ -167,10 +183,16 @@ export function UserManagement() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{user.name}</p>
-                      <Badge variant={user.role === "Geologist" ? "default" : "secondary"}>{user.role}</Badge>
+                      <Badge variant={user.role === "Geologist" ? "default" : "secondary"}>
+                        {user.role}
+                      </Badge>
                       <Badge
                         variant={user.status === "Active" ? "default" : "destructive"}
-                        className={user.status === "Active" ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                        className={
+                          user.status === "Active"
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : ""
+                        }
                       >
                         {user.status}
                       </Badge>
@@ -209,10 +231,13 @@ export function UserManagement() {
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>
-                              {user.status === "Active" ? "Suspend this user?" : "Reactivate this user?"}
+                              {user.status === "Active"
+                                ? "Suspend this user?"
+                                : "Reactivate this user?"}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to {user.status === "Active" ? "suspend" : "reactivate"}{" "}
+                              Are you sure you want to{" "}
+                              {user.status === "Active" ? "suspend" : "reactivate"}{" "}
                               <strong>{user.name}</strong>?
                             </AlertDialogDescription>
                           </AlertDialogHeader>
