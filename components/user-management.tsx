@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation" // ✅ NEW
+import { useRouter } from "next/navigation"
 import {
   Card,
   CardContent,
@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, MoreHorizontal, UserX, Mail } from "lucide-react"
+import { Search, MoreHorizontal, UserX } from "lucide-react"
 import API from "@/lib/api"
 
 type User = {
@@ -56,7 +56,7 @@ export function UserManagement() {
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const router = useRouter() // ✅ NEW
+  const router = useRouter()
 
   useEffect(() => {
     const token = localStorage.getItem("adminToken")
@@ -211,10 +211,6 @@ export function UserManagement() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Mail className="h-4 w-4 mr-2" />
-                        Send Message
-                      </DropdownMenuItem>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <DropdownMenuItem
@@ -236,9 +232,7 @@ export function UserManagement() {
                                 : "Reactivate this user?"}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to{" "}
-                              {user.status === "Active" ? "suspend" : "reactivate"}{" "}
-                              <strong>{user.name}</strong>?
+                              Are you sure you want to {user.status === "Active" ? "suspend" : "reactivate"} <strong>{user.name}</strong>?
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

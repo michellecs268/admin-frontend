@@ -1,4 +1,3 @@
-// top unchanged
 "use client"
 
 import { useEffect, useState } from "react"
@@ -51,6 +50,8 @@ export function AnnouncementManagement() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editAnnouncement, setEditAnnouncement] = useState<Announcement | null>(null)
 
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: "",
@@ -92,9 +93,30 @@ export function AnnouncementManagement() {
     }
   }
 
+  const handleUpdateAnnouncement = async () => {
+    if (!editAnnouncement) return
+    try {
+      const formattedDate = editAnnouncement.publishDate
+        ? new Date(editAnnouncement.publishDate)
+        : null
+
+      await API.put(`/admin/announcements/${editAnnouncement.id}`, {
+        title: editAnnouncement.title,
+        description: editAnnouncement.description,
+        publishDate: formattedDate,
+        type: editAnnouncement.type,
+      })
+      setIsEditDialogOpen(false)
+      setEditAnnouncement(null)
+      fetchAnnouncements()
+    } catch (err) {
+      console.error("Failed to update announcement:", err)
+    }
+  }
+
   const handleDeleteAnnouncement = async (id: string) => {
     try {
-      await API.delete(`/admin/delete-announcement/${id}`)
+      await API.delete(`/admin/announcements/${id}`)
       fetchAnnouncements()
     } catch (err) {
       console.error("Failed to delete announcement:", err)
@@ -112,7 +134,7 @@ export function AnnouncementManagement() {
     if (!input) return "N/A"
     try {
       const date = typeof input === "string" ? new Date(input) : new Date(input.seconds * 1000)
-      return date.toLocaleDateString("en-GB") // dd/mm/yyyy
+      return date.toLocaleDateString("en-GB")
     } catch {
       return "N/A"
     }
@@ -253,7 +275,10 @@ export function AnnouncementManagement() {
                       </div>
                     </div>
                     <div className="flex gap-2 ml-4">
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setEditAnnouncement(announcement)
+                        setIsEditDialogOpen(true)
+                      }}>
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
@@ -273,6 +298,71 @@ export function AnnouncementManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Announcement</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={editAnnouncement?.title || ""}
+                onChange={(e) =>
+                  setEditAnnouncement((prev) => prev && { ...prev, title: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Content</Label>
+              <Textarea
+                id="edit-description"
+                value={editAnnouncement?.description || ""}
+                onChange={(e) =>
+                  setEditAnnouncement((prev) => prev && { ...prev, description: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-publishDate">Publish Date</Label>
+              <Input
+                id="edit-publishDate"
+                type="date"
+                value={editAnnouncement?.publishDate || ""}
+                onChange={(e) =>
+                  setEditAnnouncement((prev) => prev && { ...prev, publishDate: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-type">Type</Label>
+              <Select
+                value={editAnnouncement?.type || ""}
+                onValueChange={(val) =>
+                  setEditAnnouncement((prev) => prev && { ...prev, type: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="update">Update</SelectItem>
+                  <SelectItem value="feature">Feature</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="event">Event</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateAnnouncement}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
