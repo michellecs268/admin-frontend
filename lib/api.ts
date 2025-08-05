@@ -1,14 +1,13 @@
 import axios from "axios"
 
 const API = axios.create({
-  baseURL: "http://localhost:8000", // or process.env.NEXT_PUBLIC_API_BASE_URL
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL, // use env var here
 })
 
 API.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("adminToken")
     if (token) {
-      // Ensure headers object exists
       config.headers = config.headers || {}
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -17,6 +16,3 @@ API.interceptors.request.use((config) => {
 })
 
 export default API
-
-//localStorage.setItem("token", "blabla") on inspect web, get token from login postman
-

@@ -1,10 +1,16 @@
+// top unchanged
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -16,67 +22,100 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Search, Plus, Edit, Trash2, Megaphone, Calendar } from "lucide-react"
+import API from "@/lib/api"
 
-const announcements = [
-  {
-    id: "ANN001",
-    title: "New Rock Database Update",
-    content: "We've added 50 new rock specimens to our database, including rare minerals from the Himalayas.",
-    type: "Update",
-    status: "Published",
-    publishDate: "2024-01-15",
-    author: "Admin",
-    views: 1247,
-  },
-  {
-    id: "ANN002",
-    title: "Maintenance Scheduled",
-    content:
-      "The app will undergo maintenance on January 25th from 2-4 AM EST. Some features may be temporarily unavailable.",
-    type: "Maintenance",
-    status: "Scheduled",
-    publishDate: "2024-01-25",
-    author: "Admin",
-    views: 0,
-  },
-  {
-    id: "ANN003",
-    title: "New Quest: Crystal Cave Explorer",
-    content: "Explore the mysterious crystal caves and discover rare geological formations in our latest quest!",
-    type: "Feature",
-    status: "Draft",
-    publishDate: "2024-01-30",
-    author: "Admin",
-    views: 0,
-  },
-]
+interface Announcement {
+  id: string
+  title: string
+  description: string
+  type: string
+  publishDate?: string
+  createdBy?: string
+  createdAt?: { seconds: number }
+  isVisible?: boolean
+  pinned?: boolean
+  imageUrl?: string
+  updatedAt?: string
+  updatedBy?: string
+}
 
 export function AnnouncementManagement() {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+
+  const [newAnnouncement, setNewAnnouncement] = useState({
+    title: "",
+    content: "",
+    type: "",
+    publishDate: "",
+  })
+
+  useEffect(() => {
+    fetchAnnouncements()
+  }, [])
+
+  const fetchAnnouncements = async () => {
+    try {
+      const res = await API.get<Announcement[]>("/admin/announcements")
+      setAnnouncements(res.data || [])
+    } catch (err) {
+      console.error("Failed to load announcements:", err)
+    }
+  }
+
+  const handleAddAnnouncement = async () => {
+    try {
+      await API.post("/admin/announcements", {
+        announcementId: Date.now().toString(),
+        title: newAnnouncement.title,
+        description: newAnnouncement.content,
+        type: newAnnouncement.type,
+        publishDate: newAnnouncement.publishDate,
+        imageUrl: "",
+        isVisible: true,
+        pinned: false,
+      })
+      setIsAddDialogOpen(false)
+      setNewAnnouncement({ title: "", content: "", type: "", publishDate: "" })
+      fetchAnnouncements()
+    } catch (err) {
+      console.error("Failed to create announcement:", err)
+    }
+  }
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    try {
+      await API.delete(`/admin/delete-announcement/${id}`)
+      fetchAnnouncements()
+    } catch (err) {
+      console.error("Failed to delete announcement:", err)
+    }
+  }
 
   const filteredAnnouncements = announcements.filter((announcement) => {
     const matchesSearch =
-      announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      announcement.content.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || announcement.status.toLowerCase() === statusFilter
-    return matchesSearch && matchesStatus
+      announcement.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      announcement.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesSearch
   })
 
-  const handleAddAnnouncement = () => {
-    console.log("Adding new announcement")
-    setIsAddDialogOpen(false)
-  }
-
-  const handleEditAnnouncement = (announcementId: string) => {
-    console.log(`Editing announcement ${announcementId}`)
-  }
-
-  const handleDeleteAnnouncement = (announcementId: string) => {
-    console.log(`Deleting announcement ${announcementId}`)
+  const formatDate = (input: { seconds: number } | string | undefined) => {
+    if (!input) return "N/A"
+    try {
+      const date = typeof input === "string" ? new Date(input) : new Date(input.seconds * 1000)
+      return date.toLocaleDateString("en-GB") // dd/mm/yyyy
+    } catch {
+      return "N/A"
+    }
   }
 
   return (
@@ -98,20 +137,38 @@ export function AnnouncementManagement() {
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create New Announcement</DialogTitle>
-                  <DialogDescription>Create an announcement to share with all users</DialogDescription>
+                  <DialogDescription>Share updates with users</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Title</Label>
-                    <Input id="title" placeholder="Announcement title..." />
+                    <Input
+                      id="title"
+                      value={newAnnouncement.title}
+                      onChange={(e) =>
+                        setNewAnnouncement((prev) => ({ ...prev, title: e.target.value }))
+                      }
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="content">Content</Label>
-                    <Textarea id="content" placeholder="Announcement content..." rows={4} />
+                    <Textarea
+                      id="content"
+                      rows={4}
+                      value={newAnnouncement.content}
+                      onChange={(e) =>
+                        setNewAnnouncement((prev) => ({ ...prev, content: e.target.value }))
+                      }
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type">Type</Label>
-                    <Select>
+                    <Select
+                      value={newAnnouncement.type}
+                      onValueChange={(val) =>
+                        setNewAnnouncement((prev) => ({ ...prev, type: val }))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
@@ -125,7 +182,14 @@ export function AnnouncementManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="publishDate">Publish Date</Label>
-                    <Input id="publishDate" type="date" />
+                    <Input
+                      id="publishDate"
+                      type="date"
+                      value={newAnnouncement.publishDate}
+                      onChange={(e) =>
+                        setNewAnnouncement((prev) => ({ ...prev, publishDate: e.target.value }))
+                      }
+                    />
                   </div>
                 </div>
                 <DialogFooter>
@@ -138,6 +202,7 @@ export function AnnouncementManagement() {
             </Dialog>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
@@ -149,18 +214,8 @@ export function AnnouncementManagement() {
                 className="pl-8"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
+
           <div className="space-y-4">
             {filteredAnnouncements.map((announcement) => (
               <Card key={announcement.id}>
@@ -170,22 +225,8 @@ export function AnnouncementManagement() {
                       <div className="flex items-center gap-2 mb-2">
                         <Megaphone className="h-5 w-5 text-blue-600" />
                         <h3 className="text-lg font-semibold">{announcement.title}</h3>
-                        <Badge
-                          variant={
-                            announcement.status === "Published"
-                              ? "default"
-                              : announcement.status === "Scheduled"
-                                ? "secondary"
-                                : "outline"
-                          }
-                          className={
-                            announcement.status === "Published" ? "bg-green-600 hover:bg-green-700 text-white" : ""
-                          }
-                        >
-                          {announcement.status}
-                        </Badge>
                       </div>
-                      <p className="text-muted-foreground mb-3">{announcement.content}</p>
+                      <p className="text-muted-foreground mb-3">{announcement.description}</p>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="font-medium">Type</p>
@@ -195,25 +236,32 @@ export function AnnouncementManagement() {
                           <p className="font-medium">Publish Date</p>
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            <span>{announcement.publishDate}</span>
+                            <span>{formatDate(announcement.publishDate)}</span>
                           </div>
                         </div>
                         <div>
-                          <p className="font-medium">Author</p>
-                          <p className="text-muted-foreground">{announcement.author}</p>
+                          <p className="font-medium">Created At</p>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            <span>{formatDate(announcement.createdAt)}</span>
+                          </div>
                         </div>
                         <div>
-                          <p className="font-medium">Views</p>
-                          <p className="text-muted-foreground">{announcement.views}</p>
+                          <p className="font-medium">Created By</p>
+                          <p className="text-muted-foreground">Admin</p>
                         </div>
                       </div>
                     </div>
                     <div className="flex gap-2 ml-4">
-                      <Button size="sm" variant="outline" onClick={() => handleEditAnnouncement(announcement.id)}>
+                      <Button size="sm" variant="outline">
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDeleteAnnouncement(announcement.id)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteAnnouncement(announcement.id)}
+                      >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Delete
                       </Button>
