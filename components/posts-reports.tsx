@@ -38,6 +38,7 @@ interface Report {
   reportedId: string
   reason: string
   status: string
+  rejectedReason?: string
   reviewedBy?: string
   reviewedAt?: string
   reportedAt?: string
@@ -134,13 +135,24 @@ export function PostsReports() {
   }
 
   const handleToggleReport = async (report: Report) => {
-    const newAction = report.status === "approve" ? "reject" : "approve"
-    await API.post(`/admin/review-report/${report.id}`, { action: newAction })
+    if (report.status === "approve") {
+      const reason = prompt("Enter reason to reject this approved report:")
+      if (!reason) return
+      await API.post(`/admin/review-report/${report.id}`, { action: "reject", reason })
+    } else if (report.status === "reject") {
+      await API.post(`/admin/review-report/${report.id}`, { action: "approve" })
+    }
     fetchReports()
   }
 
   const handleReviewReport = async (reportId: string, action: "approve" | "reject") => {
-    await API.post(`/admin/review-report/${reportId}`, { action })
+    let payload: any = { action }
+    if (action === "reject") {
+      const reason = prompt("Enter rejection reason:")
+      if (!reason) return
+      payload.reason = reason
+    }
+    await API.post(`/admin/review-report/${reportId}`, payload)
     fetchReports()
   }
 
@@ -152,6 +164,9 @@ export function PostsReports() {
           <h3 className="font-medium">{report.reason}</h3>
         </div>
         <div className="text-sm mb-2">Reported ID: {report.reportedId}</div>
+        {report.status === "reject" && report.rejectedReason && (
+          <p className="text-xs text-red-500 mt-1">Reason: {report.rejectedReason}</p>
+        )}
         <div className="text-xs text-muted-foreground">
           <p>Reported by: {report.reportedBy}</p>
           <p>Report ID: {report.id} • {report.reviewedAt ? new Date(report.reviewedAt).toLocaleString("en-GB") : "Pending"}</p>
@@ -173,6 +188,9 @@ export function PostsReports() {
               <p><strong>Reason:</strong> {selectedReport?.reason}</p>
               <p><strong>Type:</strong> {selectedReport?.reportedItemType}</p>
               <p><strong>Status:</strong> {selectedReport?.status}</p>
+              {selectedReport?.status === "reject" && selectedReport?.rejectedReason && (
+                <p className="text-sm text-red-500 mt-1"><strong>Rejected Reason:</strong> {selectedReport.rejectedReason}</p>
+              )}
               <p><strong>Reported By:</strong> {selectedReport?.reportedBy}</p>
               <p><strong>Reported At:</strong> {selectedReport?.reportedAt ? new Date(selectedReport?.reportedAt).toLocaleString("en-GB") : "N/A"}</p>
               {selectedReport?.reviewedAt && (
