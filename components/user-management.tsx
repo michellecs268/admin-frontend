@@ -74,7 +74,9 @@ export function UserManagement() {
           email: u.emailAddress,
           role: u.type,
           status: u.isActive ? "Active" : "Suspended",
-          joinDate: u.joinDate || u.join_date || "N/A",
+          joinDate: u.createdAt
+          ? new Date(u.createdAt._seconds ? u.createdAt._seconds * 1000 : u.createdAt).toLocaleDateString()
+          : "N/A",
         }))
         setUsers(mappedUsers)
         setLoading(false)
