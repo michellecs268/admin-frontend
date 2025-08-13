@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -25,7 +25,6 @@ interface Spawn {
   lat: number
   lng: number
   confidence?: number
-  description?: string
   spawnedAt?: string
 }
 
@@ -43,13 +42,11 @@ export function RockDistribution() {
   const [showRockDropdown, setShowRockDropdown] = useState(false)
   const [latitude, setLatitude] = useState("")
   const [longitude, setLongitude] = useState("")
-  const [description, setDescription] = useState("")
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   })
 
-  // Fetch data
   useEffect(() => {
     fetchRocks()
     fetchSpawns()
@@ -65,7 +62,6 @@ export function RockDistribution() {
     setSpawns(res.data)
   }
 
-  // Add location
   const handleAddDistribution = async () => {
     if (!selectedRock || !latitude || !longitude) {
       alert("Please fill in all required fields")
@@ -76,8 +72,7 @@ export function RockDistribution() {
       rockId: selectedRock,
       lat: parseFloat(latitude),
       lng: parseFloat(longitude),
-      confidence: 1,
-      description
+      confidence: 1
     }
 
     const res = await API.post<{ message: string; id: string }>("/admin/spawns", newSpawn)
@@ -92,7 +87,6 @@ export function RockDistribution() {
     setLocationSearch("")
     setLatitude("")
     setLongitude("")
-    setDescription("")
     setShowRockDropdown(false)
   }
 
@@ -102,7 +96,6 @@ export function RockDistribution() {
     setSelectedLocation(null)
   }
 
-  // Filtered spawns for search
   const filteredSpawns = spawns.filter(spawn => {
     const rockName = rocks.find(r => r.rockId === spawn.rockId)?.rockName || ""
     return rockName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -136,7 +129,6 @@ export function RockDistribution() {
             >
               <div className="p-2 max-w-xs">
                 <h4 className="font-semibold">{selectedLocation.rockName}</h4>
-                <p className="text-xs">{selectedLocation.description}</p>
                 <div className="flex gap-2 mt-2">
                   <Button size="sm" variant="outline" onClick={() => handleDeleteDistribution(selectedLocation.id)}>
                     <Trash2 className="h-3 w-3 mr-1" /> Delete
@@ -168,10 +160,8 @@ export function RockDistribution() {
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add Rock Distribution</DialogTitle>
-                  <DialogDescription>Add a new geological location</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  {/* Searchable Rock Dropdown */}
                   <div className="space-y-2">
                     <Label htmlFor="rockType">Rock</Label>
                     <div className="relative">
@@ -217,10 +207,6 @@ export function RockDistribution() {
                       <Label htmlFor="longitude">Longitude</Label>
                       <Input id="longitude" value={longitude} onChange={e => setLongitude(e.target.value)} />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Input id="description" value={description} onChange={e => setDescription(e.target.value)} />
                   </div>
                 </div>
                 <DialogFooter>
@@ -274,7 +260,6 @@ export function RockDistribution() {
                               <MapPin className="h-4 w-4" />
                               <span>{spawn.lat}°, {spawn.lng}°</span>
                             </div>
-                            <p className="text-sm text-muted-foreground">{spawn.description}</p>
                           </div>
                           <Button size="sm" variant="outline" onClick={() => handleDeleteDistribution(spawn.id)}>
                             <Trash2 className="h-4 w-4 mr-1" /> Delete
