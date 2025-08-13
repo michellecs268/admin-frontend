@@ -129,6 +129,9 @@ export function RockDistribution() {
             >
               <div className="p-2 max-w-xs">
                 <h4 className="font-semibold">{selectedLocation.rockName}</h4>
+                <p className="text-sm text-gray-500">
+                  Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
+                </p>
                 <div className="flex gap-2 mt-2">
                   <Button size="sm" variant="outline" onClick={() => handleDeleteDistribution(selectedLocation.id)}>
                     <Trash2 className="h-3 w-3 mr-1" /> Delete
