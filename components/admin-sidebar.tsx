@@ -22,6 +22,7 @@ import {
   Mountain,
   Trophy,
   MessageSquare,
+  AlertTriangle,
   ChevronUp,
   LogOut,
   MapPin,
@@ -41,19 +42,24 @@ const menuItems = [
     url: "/dashboard/users",
   },
   {
-    title: "Rock Database",
-    icon: Mountain,
-    url: "/dashboard/rocks",
+    title: "Post Management",
+    icon: MessageSquare,
+    url: "/dashboard/posts",
   },
   {
     title: "Report Management",
-    icon: MessageSquare,
-    url: "/dashboard/posts",
+    icon: AlertTriangle,
+    url: "/dashboard/reports",
   },
   {
     title: "Quests",
     icon: Trophy,
     url: "/dashboard/quests",
+  },
+  {
+    title: "Rock Database",
+    icon: Mountain,
+    url: "/dashboard/rocks",
   },
   {
     title: "Rock Distribution",
