@@ -17,7 +17,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Plus, Edit, Trash2, MapPin, Trophy } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Trophy } from "lucide-react"
 import API from "@/lib/api"
 
 interface Quest {
@@ -25,11 +25,11 @@ interface Quest {
   questId: string
   title: string
   description: string
-  type: "GPS-based" | "Collection" | "Identification"
-  difficulty: "Easy" | "Medium" | "Hard"
-  location: string
+  type: "Scanning" | "Collection" | "Community" | "Learning" | "GPS-based"
+  difficulty: "Easy" | "Medium"
   reward: string
   status: "Draft" | "Active" | "Past"
+  date?: any
   createdAt?: any
   updatedAt?: any
   updatedBy?: string
@@ -38,7 +38,7 @@ interface Quest {
 export function QuestManagement() {
   const [quests, setQuests] = useState<Quest[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null)
@@ -47,9 +47,9 @@ export function QuestManagement() {
     description: "",
     type: "" as Quest["type"],
     difficulty: "" as Quest["difficulty"],
-    location: "",
     reward: "",
     status: "Active" as Quest["status"],
+    date: ""
   })
 
   useEffect(() => {
@@ -70,15 +70,16 @@ export function QuestManagement() {
       await API.post("/admin/add-quest", {
         questId: Date.now().toString(),
         ...newQuest,
+        date: new Date(newQuest.date)
       })
       setNewQuest({
         title: "",
         description: "",
         type: "" as Quest["type"],
         difficulty: "" as Quest["difficulty"],
-        location: "",
         reward: "",
         status: "Active",
+        date: ""
       })
       setIsAddDialogOpen(false)
       fetchQuests()
@@ -88,14 +89,24 @@ export function QuestManagement() {
   }
 
   const handleEditQuest = (quest: Quest) => {
-    setSelectedQuest(quest)
+    setSelectedQuest({
+      ...quest,
+      date: quest.date
+        ? new Date(quest.date.seconds ? quest.date.seconds * 1000 : quest.date)
+          .toISOString()
+          .split("T")[0]
+        : ""
+    })
     setIsEditDialogOpen(true)
   }
 
   const handleSaveEdit = async () => {
     if (!selectedQuest) return
     try {
-      await API.put(`/admin/edit-quest/${selectedQuest.questId}`, selectedQuest)
+      await API.put(`/admin/edit-quest/${selectedQuest.questId}`, {
+        ...selectedQuest,
+        date: new Date(selectedQuest.date)
+      })
       setIsEditDialogOpen(false)
       setSelectedQuest(null)
       fetchQuests()
@@ -128,9 +139,10 @@ export function QuestManagement() {
 
   const filteredQuests = quests.filter((quest) => {
     return (
-      quest.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quest.description.toLowerCase().includes(searchTerm.toLowerCase())
-    ) && (statusFilter === "all" || quest.status.toLowerCase() === statusFilter)
+      (quest.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quest.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (difficultyFilter === "all" || quest.difficulty === difficultyFilter)
+    )
   })
 
   return (
@@ -157,56 +169,87 @@ export function QuestManagement() {
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Quest Title</Label>
-                    <Input id="title" value={newQuest.title} onChange={(e) => setNewQuest((prev) => ({ ...prev, title: e.target.value }))} />
+                    <Input
+                      id="title"
+                      value={newQuest.title}
+                      onChange={(e) => setNewQuest((prev) => ({ ...prev, title: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" value={newQuest.description} onChange={(e) => setNewQuest((prev) => ({ ...prev, description: e.target.value }))} />
+                    <Textarea
+                      id="description"
+                      value={newQuest.description}
+                      onChange={(e) => setNewQuest((prev) => ({ ...prev, description: e.target.value }))}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="type">Type</Label>
-                      <Select value={newQuest.type} onValueChange={(value) => setNewQuest((prev) => ({ ...prev, type: value as Quest["type"] }))}>
-                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <Select
+                        value={newQuest.type}
+                        onValueChange={(value) => setNewQuest((prev) => ({ ...prev, type: value as Quest["type"] }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="GPS-based">GPS-based</SelectItem>
+                          <SelectItem value="Scanning">Scanning</SelectItem>
                           <SelectItem value="Collection">Collection</SelectItem>
-                          <SelectItem value="Identification">Identification</SelectItem>
+                          <SelectItem value="Community">Community</SelectItem>
+                          <SelectItem value="Learning">Learning</SelectItem>
+                          <SelectItem value="GPS-based">GPS-based</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="difficulty">Difficulty</Label>
-                      <Select value={newQuest.difficulty} onValueChange={(value) => setNewQuest((prev) => ({ ...prev, difficulty: value as Quest["difficulty"] }))}>
-                        <SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger>
+                      <Select
+                        value={newQuest.difficulty}
+                        onValueChange={(value) => setNewQuest((prev) => ({ ...prev, difficulty: value as Quest["difficulty"] }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select difficulty" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Easy">Easy</SelectItem>
                           <SelectItem value="Medium">Medium</SelectItem>
-                          <SelectItem value="Hard">Hard</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input id="location" value={newQuest.location} onChange={(e) => setNewQuest((prev) => ({ ...prev, location: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="reward">Reward</Label>
-                      <Input id="reward" value={newQuest.reward} onChange={(e) => setNewQuest((prev) => ({ ...prev, reward: e.target.value }))} />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reward">Reward</Label>
+                    <Input
+                      id="reward"
+                      value={newQuest.reward}
+                      onChange={(e) => setNewQuest((prev) => ({ ...prev, reward: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select value={newQuest.status} onValueChange={(value) => setNewQuest((prev) => ({ ...prev, status: value as Quest["status"] }))}>
-                      <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                    <Select
+                      value={newQuest.status}
+                      onValueChange={(value) => setNewQuest((prev) => ({ ...prev, status: value as Quest["status"] }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Active">Active</SelectItem>
                         <SelectItem value="Draft">Draft</SelectItem>
                         <SelectItem value="Past">Past</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Publish Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={newQuest.date}
+                      onChange={(e) => setNewQuest((prev) => ({ ...prev, date: e.target.value }))}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
@@ -228,15 +271,14 @@ export function QuestManagement() {
                 className="pl-8"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
               <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Difficulty" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="past">Past</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="Easy">Easy</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -250,18 +292,27 @@ export function QuestManagement() {
                       <div className="flex items-center gap-2 mb-2">
                         <Trophy className="h-5 w-5 text-yellow-600" />
                         <h3 className="text-lg font-semibold">{quest.title}</h3>
-                        <Badge variant={quest.status === "Active" ? "default" : "secondary"} className={quest.status === "Active" ? "bg-green-600 hover:bg-green-700 text-white" : ""}>{quest.status}</Badge>
+                        <Badge
+                          variant={quest.status === "Active" ? "default" : "secondary"}
+                          className={quest.status === "Active" ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                        >
+                          {quest.status}
+                        </Badge>
                         <Badge variant="outline">{quest.difficulty}</Badge>
                       </div>
                       <p className="text-muted-foreground mb-3">{quest.description}</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="font-medium">Type & Location</p>
-                          <p className="text-muted-foreground">{quest.type} — <MapPin className="inline h-3 w-3 mr-1" />{quest.location}</p>
+                          <p className="font-medium">Type</p>
+                          <p className="text-muted-foreground">{quest.type}</p>
                         </div>
                         <div>
                           <p className="font-medium">Date Created</p>
                           <p className="text-muted-foreground">{formatDate(quest.createdAt)}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium">Publish Date</p>
+                          <p className="text-muted-foreground">{formatDate(quest.date)}</p>
                         </div>
                       </div>
                       <div className="mt-3 pt-3 border-t">
@@ -288,6 +339,7 @@ export function QuestManagement() {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -296,56 +348,101 @@ export function QuestManagement() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-title">Title</Label>
-              <Input id="edit-title" value={selectedQuest?.title || ""} onChange={(e) => setSelectedQuest((prev) => prev && { ...prev, title: e.target.value })} />
+              <Input
+                id="edit-title"
+                value={selectedQuest?.title || ""}
+                onChange={(e) =>
+                  setSelectedQuest((prev) => prev && { ...prev, title: e.target.value })
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-description">Description</Label>
-              <Textarea id="edit-description" value={selectedQuest?.description || ""} onChange={(e) => setSelectedQuest((prev) => prev && { ...prev, description: e.target.value })} />
+              <Textarea
+                id="edit-description"
+                value={selectedQuest?.description || ""}
+                onChange={(e) =>
+                  setSelectedQuest((prev) => prev && { ...prev, description: e.target.value })
+                }
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-type">Type</Label>
-                <Select value={selectedQuest?.type} onValueChange={(value) => setSelectedQuest((prev) => prev && { ...prev, type: value as Quest["type"] })}>
-                  <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <Select
+                  value={selectedQuest?.type}
+                  onValueChange={(value) =>
+                    setSelectedQuest((prev) => prev && { ...prev, type: value as Quest["type"] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="GPS-based">GPS-based</SelectItem>
+                    <SelectItem value="Scanning">Scanning</SelectItem>
                     <SelectItem value="Collection">Collection</SelectItem>
-                    <SelectItem value="Identification">Identification</SelectItem>
+                    <SelectItem value="Community">Community</SelectItem>
+                    <SelectItem value="Learning">Learning</SelectItem>
+                    <SelectItem value="GPS-based">GPS-based</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-difficulty">Difficulty</Label>
-                <Select value={selectedQuest?.difficulty} onValueChange={(value) => setSelectedQuest((prev) => prev && { ...prev, difficulty: value as Quest["difficulty"] })}>
-                  <SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger>
+                <Select
+                  value={selectedQuest?.difficulty}
+                  onValueChange={(value) =>
+                    setSelectedQuest((prev) => prev && { ...prev, difficulty: value as Quest["difficulty"] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select difficulty" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Easy">Easy</SelectItem>
                     <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="Hard">Hard</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-location">Location</Label>
-                <Input id="edit-location" value={selectedQuest?.location || ""} onChange={(e) => setSelectedQuest((prev) => prev && { ...prev, location: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-reward">Reward</Label>
-                <Input id="edit-reward" value={selectedQuest?.reward || ""} onChange={(e) => setSelectedQuest((prev) => prev && { ...prev, reward: e.target.value })} />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-reward">Reward</Label>
+              <Input
+                id="edit-reward"
+                value={selectedQuest?.reward || ""}
+                onChange={(e) =>
+                  setSelectedQuest((prev) => prev && { ...prev, reward: e.target.value })
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-status">Status</Label>
-              <Select value={selectedQuest?.status} onValueChange={(value) => setSelectedQuest((prev) => prev && { ...prev, status: value as Quest["status"] })}>
-                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+              <Select
+                value={selectedQuest?.status}
+                onValueChange={(value) =>
+                  setSelectedQuest((prev) => prev && { ...prev, status: value as Quest["status"] })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="Draft">Draft</SelectItem>
                   <SelectItem value="Past">Past</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Publish Date</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={selectedQuest?.date || ""}
+                onChange={(e) =>
+                  setSelectedQuest((prev) => prev && { ...prev, date: e.target.value })
+                }
+              />
             </div>
           </div>
           <DialogFooter>

@@ -46,7 +46,7 @@ const menuItems = [
     url: "/dashboard/rocks",
   },
   {
-    title: "Posts & Reports",
+    title: "Report Management",
     icon: MessageSquare,
     url: "/dashboard/posts",
   },

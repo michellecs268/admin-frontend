@@ -19,7 +19,6 @@ interface Rock {
   rockName: string
   rockType: string
   description?: string
-  imageUrl?: string
   createdAt?: { seconds: number }
 }
 
@@ -31,7 +30,7 @@ export function RockDatabase() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [viewRock, setViewRock] = useState<Rock | null>(null)
-  const [newRock, setNewRock] = useState<Rock>({ rockId: "", rockName: "", rockType: "", description: "", imageUrl: "" })
+  const [newRock, setNewRock] = useState<Rock>({ rockId: "", rockName: "", rockType: "", description: "" })
   const [editRockId, setEditRockId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -51,7 +50,7 @@ export function RockDatabase() {
     try {
       await API.post("/admin/add-rock", newRock)
       setIsAddDialogOpen(false)
-      setNewRock({ rockId: "", rockName: "", rockType: "", description: "", imageUrl: "" })
+      setNewRock({ rockId: "", rockName: "", rockType: "", description: "" })
       fetchRocks()
     } catch (err) {
       console.error("Failed to add rock", err)
@@ -74,7 +73,6 @@ export function RockDatabase() {
       rockName: rock.rockName,
       rockType: rock.rockType,
       description: rock.description || "",
-      imageUrl: rock.imageUrl || "",
     })
     setIsEditDialogOpen(true)
   }
@@ -89,7 +87,7 @@ export function RockDatabase() {
         await API.put(`/admin/edit-rock/${editRockId}`, newRock)
       }
       setIsEditDialogOpen(false)
-      setNewRock({ rockId: "", rockName: "", rockType: "", description: "", imageUrl: "" })
+      setNewRock({ rockId: "", rockName: "", rockType: "", description: "" })
       fetchRocks()
     } catch (err) {
       console.error("Failed to update rock", err)
@@ -115,7 +113,7 @@ export function RockDatabase() {
               <CardTitle className="font-press-start">Rock Database Management</CardTitle>
               <CardDescription>Manage rock information, add new specimens, and update geological data</CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (open) setNewRock({ rockId: "", rockName: "", rockType: "", description: "", imageUrl: "" }) }}>
+            <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (open) setNewRock({ rockId: "", rockName: "", rockType: "", description: "" }) }}>
               <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" /> Add Rock</Button></DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader><DialogTitle>Add New Rock</DialogTitle><DialogDescription>Enter the details for the new rock specimen</DialogDescription></DialogHeader>
@@ -148,7 +146,6 @@ export function RockDatabase() {
                     <div><strong>Rock Name</strong><br />{viewRock.rockName}</div>
                     <div><strong>Type</strong><br />{viewRock.rockType}</div>
                     <div><strong>Description</strong><br />{viewRock.description}</div>
-                    <div><strong>Image</strong><br /><img src={viewRock.imageUrl || "/placeholder.svg"} alt="rock" className="w-full h-64 object-cover rounded-md border mx-auto" /></div>
                     <div><strong>Created At</strong><br />{formatDate(viewRock.createdAt)}</div>
                   </div>
                 )}
@@ -189,7 +186,6 @@ export function RockDatabase() {
               <Card key={rock.rockId}>
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-4">
-                    <img src={rock.imageUrl || "/placeholder.svg"} alt={rock.rockName} className="w-16 h-16 rounded-lg object-cover" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-semibold truncate">{rock.rockName}</h3>
@@ -246,10 +242,6 @@ function RockForm({ rock, setRock }: { rock: Rock; setRock: React.Dispatch<React
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" value={rock.description} onChange={(e) => setRock((prev) => ({ ...prev, description: e.target.value }))} />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="imageUrl">Image URL</Label>
-        <Input id="imageUrl" value={rock.imageUrl} onChange={(e) => setRock((prev) => ({ ...prev, imageUrl: e.target.value }))} />
       </div>
     </div>
   )
