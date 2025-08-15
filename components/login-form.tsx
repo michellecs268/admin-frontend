@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff } from "lucide-react"
-import API from "@/lib/api" // ✅ Make sure this points to the axios instance
+import API from "@/lib/api"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -35,11 +35,11 @@ export function LoginForm() {
       const response = await API.post("/admin-auth/login", {
         email,
         password,
-      }) as { data: { token?: string; access_token?: string } }      
+      }) as { data: { token?: string; access_token?: string } }
 
       const token = response.data.token || response.data.access_token
       if (token) {
-        localStorage.setItem("adminToken", token) // Save token
+        localStorage.setItem("adminToken", token)
         router.push("/dashboard")
       } else {
         setError("Login failed: token not returned")
@@ -47,8 +47,8 @@ export function LoginForm() {
     } catch (err: any) {
       setError(
         err?.response?.data?.detail ||
-          err?.response?.data?.message ||
-          "Invalid email or password"
+        err?.response?.data?.message ||
+        "Invalid email or password"
       )
     } finally {
       setIsLoading(false)
@@ -68,7 +68,7 @@ export function LoginForm() {
         <CardTitle className="text-2xl font-bold font-press-start">RockQuest</CardTitle>
         <CardDescription>Sign in to your admin account</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} autoComplete="off">
         <CardContent className="space-y-4">
           {error && (
             <Alert variant="destructive">
@@ -82,6 +82,7 @@ export function LoginForm() {
               type="email"
               placeholder="Enter your email"
               value={email}
+              autoComplete="off"
               onChange={(e) => setEmail(e.target.value)}
               required
             />
@@ -94,6 +95,7 @@ export function LoginForm() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 value={password}
+                autoComplete="new-password"
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />

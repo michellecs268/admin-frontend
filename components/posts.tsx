@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Eye, Trash2 } from "lucide-react"
 import API from "@/lib/api"
 
@@ -29,6 +29,7 @@ interface Post {
 export function Posts() {
   const [posts, setPosts] = useState<Post[]>([])
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
+  const [deletePostId, setDeletePostId] = useState<string | null>(null) // For confirmation dialog
 
   useEffect(() => {
     fetchPosts()
@@ -43,12 +44,15 @@ export function Posts() {
     }
   }
 
-  const handleDeletePost = async (postId: string) => {
+  const confirmDeletePost = async () => {
+    if (!deletePostId) return
     try {
-      await API.delete(`/admin/delete-post/${postId}`)
-      setPosts((prev) => prev.filter((p) => p.id !== postId))
+      await API.delete(`/admin/delete-post/${deletePostId}`)
+      setPosts((prev) => prev.filter((p) => p.id !== deletePostId))
     } catch (err) {
       console.error("Failed to delete post:", err)
+    } finally {
+      setDeletePostId(null)
     }
   }
 
@@ -85,6 +89,7 @@ export function Posts() {
               </p>
             </div>
             <div className="flex gap-2">
+              {/* View Details */}
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
@@ -118,13 +123,28 @@ export function Posts() {
                 </DialogContent>
               </Dialog>
 
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => handleDeletePost(post.id)}
-              >
-                <Trash2 className="h-4 w-4 mr-1" /> Delete
-              </Button>
+              {/* Delete Confirmation */}
+              <Dialog open={deletePostId === post.id} onOpenChange={(open) => !open && setDeletePostId(null)}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setDeletePostId(post.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle>Confirm Deletion</DialogTitle>
+                  </DialogHeader>
+                  <p>Are you sure you want to delete the post "<strong>{post.rockName}</strong>"? This action cannot be undone.</p>
+                  <DialogFooter className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setDeletePostId(null)}>Cancel</Button>
+                    <Button variant="destructive" onClick={confirmDeletePost}>Delete</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         ))}
